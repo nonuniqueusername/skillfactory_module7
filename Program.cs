@@ -5,15 +5,18 @@
 
     }
 
-    sealed class OrderCollection
+    sealed class OrderCollection<TDelivery, TCustomer, TOrder>
+        where TDelivery : Delivery
+        where TCustomer : Customer
+        where TOrder : Order<TDelivery, int, TCustomer>
     {
-        private readonly List<Order<Delivery, int, Customer>> orderList;
+        private readonly List<TOrder> orderList;
         public OrderCollection()
         {
-            orderList = new List<Order<Delivery, int, Customer>>();
+            orderList = new List<TOrder>();
         }
 
-        public Order<Delivery, int, Customer> this[int index]
+        public TOrder this[int index]
         {
             get
             {
@@ -29,16 +32,21 @@
         }
 
 
-        public void AddOrder<TOrder>(TOrder order) where TOrder : Order<Delivery, int, Customer>
+        public void AddOrder(TOrder order) { }
+
+        public void RemoveOrder(TOrder order) { }
+
+        public List<TOrder> GetOrdersByCustomer<TCustomer>(TCustomer customer) where TCustomer : Customer
         {
-            orderList.Add(order);
+            return orderList.Where(e => e.Customer == customer).ToList();
         }
     }
 
-    class Order<TDelivery, TProductID, TCustomer> 
+    class Order<TDelivery, TProductID, TCustomer>
         where TDelivery : Delivery
         where TCustomer : Customer
     {
+        static int numberCounter = 0;
         public TDelivery Delivery;
         public int Number;
         public string Description;
@@ -46,29 +54,33 @@
         public TCustomer Customer;
         public DateTime Date;
 
-        public Order(TDelivery delivery, int number, string description, Product<TProductID>[] products, TCustomer customer, DateTime date)
+        public Order(TDelivery delivery, string description, Product<TProductID>[] products, TCustomer customer, DateTime date)
         {
             Delivery = delivery;
-            Number = number;
             Description = description;
             Products = products;
             Customer = customer;
             Date = date;
+            Number = ++numberCounter;
         }
 
         public void DisplayAddress()
         {
             Console.WriteLine(Delivery.Address);
         }
+        public void ChangeDeliveryType(TDelivery delivery)
+        {
+            Delivery = delivery;
+        }
     }
 
-    abstract class Product<T>
+    abstract class Product<TID>
     {
         public string Name;
-        public T ID;
+        public TID ID;
         public string Price;
 
-        public Product(string name, T iD, string price)
+        public Product(string name, TID iD, string price)
         {
             Name = name;
             ID = iD;
@@ -76,11 +88,11 @@
         }
     }
 
-    class Grecha<T> : Product<T>
+    class Grecha<TID> : Product<TID>
     {
         public float Mass;
 
-        public Grecha(string name, T iD, string price, float mass) : base(name, iD, price)
+        public Grecha(string name, TID iD, string price, float mass) : base(name, iD, price)
         {
             Mass = mass;
         }
@@ -121,7 +133,7 @@
             LastName = lastName;
             PhoneNumber = phoneNumber;
             Email = email;
-            FullName = (LastName+Name).Transliterate();
+            FullName = (LastName + Name).Transliterate();
         }
 
         public virtual void Notify()
@@ -161,18 +173,11 @@
         public string Address;
     }
 
-    class HomeDelivery : Delivery
-    {
+    class HomeDelivery : Delivery { }
 
-    }
+    class PickPointDelivery : Delivery { }
 
-    class PickPointDelivery : Delivery
-    {
-    }
-
-    class ShopDelivery : Delivery
-    {
-    }
+    class ShopDelivery : Delivery { }
 
     static class Validator
     {
@@ -228,7 +233,7 @@
         }
     }
 
-    
+
 
 }
 static class StringHelper
